@@ -1,0 +1,68 @@
+import cv2
+from ultralytics import YOLO
+
+#-------------------------
+# 1. Load the pre-trained yolo8 model, trained using COCO dataset
+# 'yolov8n.pt' is the 'nano' version, which is fast for real-time video
+#model = YOLO("yolov8n.pt")     # low accuracy, high speed
+#model = YOLO("yolov8s.pt")      # medium accuracy, okay speed
+#model = YOLO("yolov8m.pt")      # high accuracy, pretty slow
+model = YOLO("yolov8l.pt")      # very high accuracy, really slow
+#-------------------------
+
+# 2. Access the webcam (0 is usually the default camera)
+cap = cv2.VideoCapture(0)
+
+# Check if the camera opened correctly
+if not cap.isOpened():
+    print("Error: Could not open camera.")
+    exit()
+
+print("Press 'q' to stop the detection.")
+
+while True:
+    # Capture a single frame from the camera
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # 3. Run YOLOv8 detection on the frame
+    # stream=True is more memory-efficient for real-time video
+    results = model(frame, stream=True)
+
+    # 4. Draw results (bounding boxes and labels) on the frame
+    #print(results)
+    for r in results:
+        # 1. Get the names dictionary {0: 'person', 1: 'bicycle', ...}
+        names = r.names
+        # 2. Iterate through detected boxes
+        for box in r.boxes:
+            # Get coordinates (top-left x, top-left y, bottom-right x, bottom-right y)
+            x1, y1, x2, y2 = box.xyxy[0].tolist()
+            
+            # Get confidence score
+            conf = box.conf[0].item()
+            
+            # Get class ID and look up the name
+            cls_id = int(box.cls[0].item())
+            label = names[cls_id]
+            
+            # prints out the LABEL of the object (what type it is), and the confidence that the object is what it says it is
+            # as well as the positions of the object (x1, y1 is top left corner, x2, y2 is bottom right corner I believe)
+            # when using this, you should consider adding a confidence threshold so it only tracks objects if it is fairly confident they are real,
+            # so that it doesnt track "ghost objects" that arent actually real
+            print(f"Detected: {label} ({conf:.2f}) at [{int(x1)}, {int(y1)}, {int(x2)}, {int(y2)}]")
+
+        # Draw results
+        annotated_frame = r.plot()
+
+    # 5. Show the frame in a window
+    cv2.imshow("COCO Real-Time Detection", annotated_frame)
+
+    # Stop the loop if the 'q' key is pressed
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+# 6. Clean up resources
+cap.release()
+cv2.destroyAllWindows()
