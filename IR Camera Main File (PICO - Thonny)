@@ -1,0 +1,20 @@
+from machine import Pin, I2C
+import time
+from mlx90640 import MLX90640
+
+i2c = I2C(0, scl=Pin(1), sda=Pin(0), freq=400000)
+cam = MLX90640(i2c)
+
+frame = [0] * 768
+
+while True:
+    try:
+        cam.getFrame(frame)
+
+        center_index = (24 // 2) * 32 + (32 // 2)
+        print("Temp: {:.2f} C".format(frame[center_index]))
+
+    except Exception as e:
+        print("Error:", e)
+
+    time.sleep(1)
