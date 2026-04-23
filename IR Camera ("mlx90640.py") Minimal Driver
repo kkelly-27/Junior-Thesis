@@ -1,0 +1,18 @@
+from machine import I2C
+import time
+
+class MLX90640:
+    def __init__(self, i2c, address=0x33):
+        self.i2c = i2c
+        self.addr = address
+
+    def getFrame(self, framebuf):
+        # placeholder 
+        data = self.i2c.readfrom_mem(self.addr, 0x0400, 1536)
+
+        for i in range(768):
+            val = data[2*i] | (data[2*i+1] << 8)
+            
+            temp = (val & 0x7FFF) * 0.02 - 273.15
+            
+            framebuf[i] = temp
